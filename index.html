@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Real Posture CVA — SYS v3.0 (Apex-CNN Studio)</title>
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0/dist/ort.min.js"></script>
   <style>
@@ -348,24 +347,24 @@
     </div>
 
     <!-- Built-in Android GitHub Repo Creator & Pusher -->
-    <div id="ghDrawer" class="gh-drawer">
+    <div id="ghDrawer" class="gh-drawer open">
       <h3>
         <span>⚡ Direct Android → GitHub Repository Deployer</span>
-        <a href="https://github.com/settings/tokens/new?scopes=repo&description=System-3.0-Android" target="_blank" style="font-size:0.75rem; color:#38bdf8;">Get 1-Tap Token ↗</a>
+        <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=System-3.0-Android" target="_blank" style="font-size:0.75rem; color:#38bdf8;">Get 1-Tap Token ↗</a>
       </h3>
       <div class="gh-grid">
-        <input type="password" id="ghToken" class="gh-input" placeholder="Paste GitHub Token (ghp_...)" />
-        <input type="text" id="ghRepoName" class="gh-input" value="system-3.0" placeholder="Repository Name" />
-        <button id="deployNowBtn" class="primary">🚀 Deploy Repo Now</button>
+        <input type="password" id="ghToken" class="gh-input" placeholder="Paste GitHub Token (ghp_...)">
+        <input type="text" id="ghRepoName" class="gh-input" value="system-3.0" placeholder="Repository Name">
+        <button id="deployNowBtn" class="primary" disabled="">🚀 Deploy Repo Now</button>
       </div>
-      <div id="ghStatus" class="gh-status">Creates the repository on your GitHub and pushes index.html, apex_cva_cnn.py, and README.md directly from your phone.</div>
+      <div id="ghStatus" class="gh-status">3/4 Uploading index.html &amp; apex_cva_cnn.py...</div>
     </div>
 
     <div class="settings-bar">
       <div class="setting-item">
         <label for="modelSelect">Inference Engine</label>
         <select id="modelSelect">
-          <option value="heavy" selected>MediaPipe Heavy (29MB) + Cranial Lock</option>
+          <option value="heavy" selected="">MediaPipe Heavy (29MB) + Cranial Lock</option>
           <option value="full">MediaPipe Full (9MB)</option>
           <option value="lite">MediaPipe Lite (5.5MB)</option>
           <option value="onnx">Custom Apex-CVA CNN (.onnx)</option>
@@ -373,27 +372,27 @@
       </div>
       <div class="setting-item">
         <label for="c7UpRange">C7 Vertical Offset <span id="c7UpLabel">30%</span></label>
-        <input type="range" id="c7UpRange" min="0" max="80" value="30" />
+        <input type="range" id="c7UpRange" min="0" max="80" value="30">
       </div>
       <div class="setting-item">
         <label for="c7BackRange">C7 Posterior Offset <span id="c7BackLabel">18%</span></label>
-        <input type="range" id="c7BackRange" min="0" max="60" value="18" />
+        <input type="range" id="c7BackRange" min="0" max="60" value="18">
       </div>
       <div class="setting-item">
         <label for="smoothRange">Low-Pass Jitter Filter <span id="smoothLabel">70%</span></label>
-        <input type="range" id="smoothRange" min="0" max="90" value="70" />
+        <input type="range" id="smoothRange" min="0" max="90" value="70">
       </div>
     </div>
 
     <div class="controls">
       <label class="btn primary" for="photoInput">📷 Snap / Photo</label>
-      <input type="file" id="photoInput" accept="image/*" />
-      <button id="camBtn" disabled>🎥 Live Cam</button>
-      <button id="flipCamBtn" disabled>🔄 Flip Cam</button>
-      <button id="labelBtn" class="cnn-btn" disabled>🎯 Save CNN Label</button>
+      <input type="file" id="photoInput" accept="image/*">
+      <button id="camBtn">🎥 Live Cam</button>
+      <button id="flipCamBtn">🔄 Flip Cam</button>
+      <button id="labelBtn" class="cnn-btn" disabled="">🎯 Save CNN Label</button>
       <label class="btn cnn-btn" for="onnxInput">🧠 Load .ONNX</label>
-      <input type="file" id="onnxInput" accept=".onnx" />
-      <button id="exportBtn" disabled>📊 Export CSV (<span id="logCount">0</span>)</button>
+      <input type="file" id="onnxInput" accept=".onnx">
+      <button id="exportBtn" disabled="">📊 Export CSV (<span id="logCount">0</span>)</button>
     </div>
 
     <div class="telemetry-grid">
@@ -403,7 +402,7 @@
           <span id="badgeCVA">--</span>
         </div>
         <div class="metric-value" id="valCVA">--°</div>
-        <div class="metric-norm">Normal: &ge; 50° (FHP &lt; 48°)</div>
+        <div class="metric-norm">Normal: ≥ 50° (FHP &lt; 48°)</div>
       </div>
 
       <div class="metric-card" id="cardCRA">
@@ -435,14 +434,14 @@
     </div>
 
     <div class="viewport">
-      <video id="video" playsinline muted></video>
-      <img id="sourceImage" alt="Uploaded lateral posture frame" />
+      <video id="video" playsinline="" muted=""></video>
+      <img id="sourceImage" alt="Uploaded lateral posture frame">
       <canvas id="outputCanvas"></canvas>
       <div class="hud-overlay">
         <div class="hud-tag" id="sideTag">Engine: MediaPipe HEAVY</div>
         <div class="hud-tag" id="dragHintTag">💡 Drag C7/Tragus onto bone → Tap 'Save CNN Label'</div>
       </div>
-      <div id="status">Loading MediaPipe Pose Heavy model...</div>
+      <div id="status">Ready (HEAVY active). Upload a 90° side-profile photo or start camera.</div>
     </div>
   </div>
 
@@ -1087,6 +1086,7 @@
       a.click();
     });
   </script>
-</body>
-</html>
 
+
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm/vision_wasm_internal.js" crossorigin="anonymous"></script></body></html>
