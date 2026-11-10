@@ -1,27 +1,28 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Real Posture CVA — SYS v3.0 (Apex-CNN Studio)</title>
-  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0/dist/ort.min.js"></script>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Real Posture CVA — SYS v3.5 (In-Browser Self-Training CNN)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
   <style>
     :root {
-      --bg: #060911;
-      --surface: rgba(17, 24, 39, 0.88);
-      --surface-elevated: rgba(31, 41, 55, 0.92);
-      --border: rgba(55, 65, 81, 0.75);
+      --bg: #090d16;
+      --surface: #111827;
+      --surface-elevated: #1f2937;
+      --border: #374151;
       --text: #f9fafb;
       --muted: #9ca3af;
       --accent: #06b6d4;
-      --purple: #8b5cf6;
       --good: #10b981;
       --warn: #f59e0b;
       --bad: #ef4444;
+      --purple: #8b5cf6;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #090d16 55%, #030712 100%);
+      background: radial-gradient(circle at top, #111827 0%, #090d16 100%);
       color: var(--text);
       min-height: 100vh;
       padding: 12px;
@@ -31,7 +32,7 @@
     }
     .app-shell {
       width: 100%;
-      max-width: 880px;
+      max-width: 780px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -40,164 +41,110 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      background: var(--surface);
-      backdrop-filter: blur(16px);
+      background: rgba(17, 24, 39, 0.88);
+      backdrop-filter: blur(12px);
       border: 1px solid var(--border);
-      padding: 14px 16px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+      padding: 12px 16px;
+      border-radius: 14px;
     }
     .brand h1 {
       font-size: 1.1rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
       gap: 8px;
-    }
-    .sys-badge {
-      font-size: 0.68rem;
-      color: #c4b5fd;
-      background: rgba(139, 92, 246, 0.18);
-      border: 1px solid rgba(167, 139, 250, 0.4);
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
     }
     .brand p {
-      font-size: 0.74rem;
+      font-size: 0.75rem;
       color: var(--muted);
-      margin-top: 3px;
-    }
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      margin-top: 2px;
     }
     .posture-pill {
-      padding: 7px 13px;
+      padding: 6px 12px;
       border-radius: 999px;
-      font-size: 0.74rem;
-      font-weight: 800;
+      font-size: 0.75rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       background: rgba(16, 185, 129, 0.15);
       color: var(--good);
-      border: 1px solid rgba(16, 185, 129, 0.45);
+      border: 1px solid rgba(16, 185, 129, 0.4);
       white-space: nowrap;
     }
     .posture-pill.warn {
       background: rgba(245, 158, 11, 0.15);
       color: var(--warn);
-      border-color: rgba(245, 158, 11, 0.45);
+      border-color: rgba(245, 158, 11, 0.4);
     }
     .posture-pill.bad {
       background: rgba(239, 68, 68, 0.2);
       color: var(--bad);
-      border-color: rgba(239, 68, 68, 0.55);
+      border-color: rgba(239, 68, 68, 0.5);
     }
-
-    /* Android 1-Tap GitHub Deployer Drawer */
-    .gh-drawer {
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-      background: rgba(15, 23, 42, 0.96);
-      border: 1px solid #38bdf8;
-      padding: 14px;
-      border-radius: 14px;
-      box-shadow: 0 12px 32px rgba(2, 132, 199, 0.25);
-    }
-    .gh-drawer.open { display: flex; }
-    .gh-drawer h3 {
-      font-size: 0.9rem;
-      color: #38bdf8;
+    .cnn-banner {
+      background: linear-gradient(90deg, rgba(124, 58, 237, 0.18), rgba(6, 182, 212, 0.15));
+      border: 1px solid rgba(167, 139, 250, 0.4);
+      border-radius: 12px;
+      padding: 10px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-    .gh-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr auto;
+      flex-wrap: wrap;
       gap: 8px;
+      font-size: 0.8rem;
     }
-    @media (max-width: 600px) {
-      .gh-grid { grid-template-columns: 1fr; }
+    .cnn-stats {
+      display: flex;
+      gap: 14px;
+      font-variant-numeric: tabular-nums;
+      color: #e9d5ff;
+      font-weight: 600;
     }
-    .gh-input {
-      background: var(--surface-elevated);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 9px 12px;
-      border-radius: 9px;
-      font-size: 0.82rem;
-      width: 100%;
-    }
-    .gh-status {
-      font-size: 0.78rem;
-      color: #a7f3d0;
-      word-break: break-all;
-    }
-    .gh-status a { color: #38bdf8; font-weight: 700; }
-
     .settings-bar {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
       background: var(--surface);
       border: 1px solid var(--border);
-      padding: 12px 14px;
-      border-radius: 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
     }
     .setting-item {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 4px;
     }
     .setting-item label {
       font-size: 0.7rem;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-weight: 700;
-      display: flex;
-      justify-content: space-between;
+      font-weight: 600;
     }
-    .setting-item label span { color: var(--accent); }
     select, input[type="range"] {
       background: var(--surface-elevated);
       color: var(--text);
       border: 1px solid var(--border);
-      padding: 7px 9px;
+      padding: 6px 8px;
       border-radius: 8px;
       font-size: 0.82rem;
       width: 100%;
     }
-    input[type="range"] { accent-color: var(--accent); }
-
     .controls {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
-    @media (max-width: 720px) {
-      .controls { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (max-width: 460px) {
+    @media (max-width: 600px) {
       .controls { grid-template-columns: repeat(2, 1fr); }
     }
     button, label.btn {
       background: var(--surface-elevated);
       color: var(--text);
       border: 1px solid var(--border);
-      padding: 10px;
-      border-radius: 11px;
-      font-size: 0.79rem;
-      font-weight: 700;
+      padding: 10px 10px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -205,39 +152,31 @@
       gap: 6px;
       transition: all 0.15s ease;
       text-align: center;
-      user-select: none;
     }
     button.primary, label.btn.primary {
       background: linear-gradient(135deg, #0891b2, #0284c7);
       border-color: #38bdf8;
     }
-    button.cnn-btn, label.btn.cnn-btn {
+    button.cnn-btn {
       background: linear-gradient(135deg, #7c3aed, #4f46e5);
       border-color: #a78bfa;
     }
-    button.gh-btn {
-      background: linear-gradient(135deg, #059669, #10b981);
-      border-color: #6ee7b7;
-      padding: 7px 12px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-    }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button:hover:not(:disabled), label.btn:hover { filter: brightness(1.12); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
     input[type="file"] { display: none; }
-
     .telemetry-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
+      gap: 8px;
     }
-    @media (max-width: 600px) {
+    @media (max-width: 560px) {
       .telemetry-grid { grid-template-columns: repeat(2, 1fr); }
     }
     .metric-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px 14px;
+      border-radius: 12px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -259,28 +198,27 @@
     .metric-header {
       display: flex;
       justify-content: space-between;
-      font-size: 0.71rem;
+      align-items: center;
+      font-size: 0.72rem;
       color: var(--muted);
       text-transform: uppercase;
-      font-weight: 700;
+      font-weight: 600;
     }
     .metric-value {
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 800;
       margin: 4px 0 2px;
       font-variant-numeric: tabular-nums;
     }
-    .metric-norm { font-size: 0.69rem; color: var(--muted); }
-
+    .metric-norm { font-size: 0.7rem; color: var(--muted); }
     .viewport {
       position: relative;
       width: 100%;
-      background: #020617;
+      background: #030712;
       border: 1px solid var(--border);
-      border-radius: 18px;
+      border-radius: 16px;
       overflow: hidden;
       aspect-ratio: 3 / 4;
-      max-height: 70vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -300,31 +238,30 @@
       right: 10px;
       display: flex;
       justify-content: space-between;
-      gap: 6px;
       pointer-events: none;
-      flex-wrap: wrap;
     }
     .hud-tag {
       background: rgba(9, 13, 22, 0.82);
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(6px);
       border: 1px solid rgba(255, 255, 255, 0.14);
       padding: 5px 10px;
       border-radius: 8px;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       color: #e5e7eb;
-      font-weight: 600;
+      font-variant-numeric: tabular-nums;
     }
     #status {
       position: absolute;
       bottom: 10px;
       left: 10px;
       right: 10px;
-      background: rgba(9, 13, 22, 0.92);
+      background: rgba(9, 13, 22, 0.9);
+      backdrop-filter: blur(8px);
       border: 1px solid var(--border);
       padding: 8px 12px;
       border-radius: 10px;
-      font-size: 0.78rem;
-      color: #cbd5e1;
+      font-size: 0.8rem;
+      color: var(--muted);
       text-align: center;
       pointer-events: none;
     }
@@ -334,65 +271,49 @@
   <div class="app-shell">
     <div class="top-bar">
       <div class="brand">
-        <h1>
-          🧬 Real Posture CVA
-          <span class="sys-badge">SYS v3.0 · Apex-CNN Studio</span>
-        </h1>
-        <p>Active-Learning Labeler · Custom ONNX Engine · Android 1-Tap GitHub Deployer</p>
+        <h1>🧬 Real Posture CVA <span style="font-size:0.7rem; color:#a78bfa; font-weight:700;">SYS v3.5 · Zero-Cloud Self-Training CNN</span></h1>
+        <p>Built-In TensorFlow.js Convolutional + Biomechanical Neural Network (No Colab or Codespace Needed)</p>
       </div>
-      <div class="top-actions">
-        <button id="toggleGhBtn" class="gh-btn">🚀 Push to GitHub</button>
-        <div id="posturePill" class="posture-pill">Awaiting Input</div>
-      </div>
+      <div id="posturePill" class="posture-pill">Awaiting Input</div>
     </div>
 
-    <!-- Built-in Android GitHub Repo Creator & Pusher -->
-    <div id="ghDrawer" class="gh-drawer open">
-      <h3>
-        <span>⚡ Direct Android → GitHub Repository Deployer</span>
-        <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=System-3.0-Android" target="_blank" style="font-size:0.75rem; color:#38bdf8;">Get 1-Tap Token ↗</a>
-      </h3>
-      <div class="gh-grid">
-        <input type="password" id="ghToken" class="gh-input" placeholder="Paste GitHub Token (ghp_...)">
-        <input type="text" id="ghRepoName" class="gh-input" value="system-3.0" placeholder="Repository Name">
-        <button id="deployNowBtn" class="primary" disabled="">🚀 Deploy Repo Now</button>
+    <div class="cnn-banner">
+      <div><strong>🧠 In-Browser Apex-CVA Neural Network:</strong> <span id="cnnStateText">Initialized (Conv2D + Osteological MLP)</span></div>
+      <div class="cnn-stats">
+        <span id="cnnEpochStat">Trained Samples: 0</span>
+        <span id="cnnLossStat">Last Loss: --</span>
       </div>
-      <div id="ghStatus" class="gh-status">3/4 Uploading index.html &amp; apex_cva_cnn.py...</div>
     </div>
 
     <div class="settings-bar">
       <div class="setting-item">
-        <label for="modelSelect">Inference Engine</label>
+        <label for="modelSelect">AI Backbone Precision</label>
         <select id="modelSelect">
-          <option value="heavy" selected="">MediaPipe Heavy (29MB) + Cranial Lock</option>
-          <option value="full">MediaPipe Full (9MB)</option>
-          <option value="lite">MediaPipe Lite (5.5MB)</option>
-          <option value="onnx">Custom Apex-CVA CNN (.onnx)</option>
+          <option value="heavy" selected>Heavy (29MB) + In-Browser CNN</option>
+          <option value="full">Full (9MB) + In-Browser CNN</option>
+          <option value="lite">Lite (5.5MB) + In-Browser CNN</option>
         </select>
       </div>
       <div class="setting-item">
-        <label for="c7UpRange">C7 Vertical Offset <span id="c7UpLabel">30%</span></label>
-        <input type="range" id="c7UpRange" min="0" max="80" value="30">
+        <label for="c7UpRange">C7 Vertical Offset: <span id="c7UpLabel">30%</span></label>
+        <input type="range" id="c7UpRange" min="0" max="80" value="30" />
       </div>
       <div class="setting-item">
-        <label for="c7BackRange">C7 Posterior Offset <span id="c7BackLabel">18%</span></label>
-        <input type="range" id="c7BackRange" min="0" max="60" value="18">
+        <label for="c7BackRange">C7 Posterior Offset: <span id="c7BackLabel">18%</span></label>
+        <input type="range" id="c7BackRange" min="0" max="60" value="18" />
       </div>
       <div class="setting-item">
-        <label for="smoothRange">Low-Pass Jitter Filter <span id="smoothLabel">70%</span></label>
-        <input type="range" id="smoothRange" min="0" max="90" value="70">
+        <label for="smoothRange">Low-Pass Jitter Filter: <span id="smoothLabel">70%</span></label>
+        <input type="range" id="smoothRange" min="0" max="90" value="70" />
       </div>
     </div>
 
     <div class="controls">
-      <label class="btn primary" for="photoInput">📷 Snap / Photo</label>
-      <input type="file" id="photoInput" accept="image/*">
-      <button id="camBtn">🎥 Live Cam</button>
-      <button id="flipCamBtn">🔄 Flip Cam</button>
-      <button id="labelBtn" class="cnn-btn" disabled="">🎯 Save CNN Label</button>
-      <label class="btn cnn-btn" for="onnxInput">🧠 Load .ONNX</label>
-      <input type="file" id="onnxInput" accept=".onnx">
-      <button id="exportBtn" disabled="">📊 Export CSV (<span id="logCount">0</span>)</button>
+      <label class="btn primary" for="photoInput">📷 Snap / Upload Photo</label>
+      <input type="file" id="photoInput" accept="image/*" />
+      <button id="camBtn" disabled>🎥 Live Camera</button>
+      <button id="trainCnnBtn" class="cnn-btn" disabled>🧠 Train CNN on This Frame</button>
+      <button id="exportBtn" disabled>📊 Export CVA CSV</button>
     </div>
 
     <div class="telemetry-grid">
@@ -402,7 +323,7 @@
           <span id="badgeCVA">--</span>
         </div>
         <div class="metric-value" id="valCVA">--°</div>
-        <div class="metric-norm">Normal: ≥ 50° (FHP &lt; 48°)</div>
+        <div class="metric-norm">Normal: &gt; 50° (FHP &lt; 48°)</div>
       </div>
 
       <div class="metric-card" id="cardCRA">
@@ -411,7 +332,7 @@
           <span id="badgeCRA">Tragus→Eye</span>
         </div>
         <div class="metric-value" id="valCRA">--°</div>
-        <div class="metric-norm">Craniohorizontal Angle</div>
+        <div class="metric-norm">Cranial Horizontal Angle</div>
       </div>
 
       <div class="metric-card" id="cardFSA">
@@ -434,14 +355,14 @@
     </div>
 
     <div class="viewport">
-      <video id="video" playsinline="" muted=""></video>
-      <img id="sourceImage" alt="Uploaded lateral posture frame">
+      <video id="video" playsinline muted></video>
+      <img id="sourceImage" alt="Uploaded lateral posture frame" />
       <canvas id="outputCanvas"></canvas>
       <div class="hud-overlay">
-        <div class="hud-tag" id="sideTag">Engine: MediaPipe HEAVY</div>
-        <div class="hud-tag" id="dragHintTag">💡 Drag C7/Tragus onto bone → Tap 'Save CNN Label'</div>
+        <div class="hud-tag" id="sideTag">Engine: Heavy + TF.js CNN</div>
+        <div class="hud-tag" id="dragHintTag">💡 Drag C7/Tragus onto bone → Click 'Train CNN on This Frame'</div>
       </div>
-      <div id="status">Ready (HEAVY active). Upload a 90° side-profile photo or start camera.</div>
+      <div id="status">Loading MediaPipe Heavy + In-Browser TensorFlow.js CNN...</div>
     </div>
   </div>
 
@@ -459,6 +380,10 @@
 
     const statusEl = document.getElementById("status");
     const posturePill = document.getElementById("posturePill");
+    const cnnStateText = document.getElementById("cnnStateText");
+    const cnnEpochStat = document.getElementById("cnnEpochStat");
+    const cnnLossStat = document.getElementById("cnnLossStat");
+
     const modelSelect = document.getElementById("modelSelect");
     const c7UpRange = document.getElementById("c7UpRange");
     const c7UpLabel = document.getElementById("c7UpLabel");
@@ -468,19 +393,9 @@
     const smoothLabel = document.getElementById("smoothLabel");
 
     const photoInput = document.getElementById("photoInput");
-    const onnxInput = document.getElementById("onnxInput");
     const camBtn = document.getElementById("camBtn");
-    const flipCamBtn = document.getElementById("flipCamBtn");
-    const labelBtn = document.getElementById("labelBtn");
+    const trainCnnBtn = document.getElementById("trainCnnBtn");
     const exportBtn = document.getElementById("exportBtn");
-    const logCountEl = document.getElementById("logCount");
-
-    const toggleGhBtn = document.getElementById("toggleGhBtn");
-    const ghDrawer = document.getElementById("ghDrawer");
-    const ghTokenInput = document.getElementById("ghToken");
-    const ghRepoNameInput = document.getElementById("ghRepoName");
-    const deployNowBtn = document.getElementById("deployNowBtn");
-    const ghStatus = document.getElementById("ghStatus");
 
     const video = document.getElementById("video");
     const sourceImage = document.getElementById("sourceImage");
@@ -490,17 +405,15 @@
 
     let visionResolver = null;
     let poseLandmarker = null;
-    let onnxSession = null;
     let runningMode = "IMAGE";
     let webcamRunning = false;
     let facingMode = "environment";
     let currentStream = null;
-    let currentPhotoName = "lateral_frame.jpg";
 
     let smoothedLandmarks = null;
     let lastRawLandmarks = null;
     let sessionLogs = [];
-    let lastLogTime = 0;
+    let trainedSampleCount = 0;
 
     let manualNodes = {
       c7: null,
@@ -512,127 +425,147 @@
     };
     let draggingKey = null;
 
-    toggleGhBtn.addEventListener("click", () => {
-      ghDrawer.classList.toggle("open");
-    });
+    let biomechCnnModel = null;
 
-    // Helper for UTF-8 Base64 encoding for GitHub API
-    function utf8ToBase64(str) {
-      return btoa(unescape(encodeURIComponent(str)));
+    async function initInBrowserCNN() {
+      const tf = window.tf;
+      if (!tf) return;
+      try {
+        biomechCnnModel = await tf.loadLayersModel("localstorage://apex_cva_cnn_v35");
+        cnnStateText.textContent = "Loaded Saved CNN Weights from Browser Memory";
+      } catch (_) {
+        const patchInput = tf.input({ shape: [32, 32, 3], name: "cervical_patch" });
+        const geomInput = tf.input({ shape: [8], name: "skeletal_vectors" });
+
+        let x = tf.layers.conv2d({ filters: 16, kernelSize: 3, padding: "same", activation: "relu" }).apply(patchInput);
+        x = tf.layers.maxPooling2d({ poolSize: 2 }).apply(x);
+        x = tf.layers.conv2d({ filters: 32, kernelSize: 3, padding: "same", activation: "relu" }).apply(x);
+        x = tf.layers.globalAveragePooling2d({}).apply(x);
+
+        const combined = tf.layers.concatenate().apply([x, geomInput]);
+        let h = tf.layers.dense({ units: 64, activation: "relu" }).apply(combined);
+        h = tf.layers.dense({ units: 32, activation: "relu" }).apply(h);
+        const deltaOut = tf.layers.dense({
+          units: 4,
+          activation: "tanh",
+          kernelInitializer: "zeros",
+          biasInitializer: "zeros"
+        }).apply(h);
+
+        biomechCnnModel = tf.model({ inputs: [patchInput, geomInput], outputs: deltaOut });
+      }
+      biomechCnnModel.compile({
+        optimizer: tf.train.adam(0.002),
+        loss: "meanSquaredError"
+      });
+    }
+    initInBrowserCNN();
+
+    function extractCnnFeatures(baseNodes, width, height) {
+      const tf = window.tf;
+      const off = document.createElement("canvas");
+      off.width = 32;
+      off.height = 32;
+      const octx = off.getContext("2d");
+
+      const minX = Math.max(0, Math.min(baseNodes.tragus.x, baseNodes.acromion.x) - 40);
+      const maxX = Math.min(width, Math.max(baseNodes.tragus.x, baseNodes.acromion.x) + 40);
+      const minY = Math.max(0, Math.min(baseNodes.eye.y, baseNodes.tragus.y) - 30);
+      const maxY = Math.min(height, baseNodes.acromion.y + 30);
+      const cropW = Math.max(20, maxX - minX);
+      const cropH = Math.max(20, maxY - minY);
+
+      const srcEl = webcamRunning ? video : sourceImage;
+      octx.drawImage(srcEl, minX, minY, cropW, cropH, 0, 0, 32, 32);
+
+      const patchTensor = tf.browser.fromPixels(off).toFloat().div(255.0).expandDims(0);
+      const geomArray = [
+        baseNodes.c7.x / width,
+        baseNodes.c7.y / height,
+        baseNodes.tragus.x / width,
+        baseNodes.tragus.y / height,
+        baseNodes.eye.x / width,
+        baseNodes.eye.y / height,
+        baseNodes.acromion.x / width,
+        baseNodes.acromion.y / height
+      ];
+      const geomTensor = tf.tensor2d([geomArray], [1, 8]);
+      return { patchTensor, geomTensor };
     }
 
-    // One-Tap GitHub Repository Deployer from Android Browser
-    deployNowBtn.addEventListener("click", async () => {
-      const token = ghTokenInput.value.trim();
-      const repoName = ghRepoNameInput.value.trim() || "system-3.0";
-      if (!token) {
-        ghStatus.textContent = "⚠️ Please paste your GitHub Personal Access Token (ghp_...) first.";
-        return;
-      }
-      deployNowBtn.disabled = true;
-      try {
-        ghStatus.textContent = "1/4 Authenticating with GitHub...";
-        const headers = {
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/vnd.github+json",
-          "Content-Type": "application/json"
-        };
-
-        const userRes = await fetch("https://api.github.com/user", { headers });
-        if (!userRes.ok) throw new Error("Invalid GitHub token or unauthorized.");
-        const userData = await userRes.json();
-        const owner = userData.login;
-
-        ghStatus.textContent = `2/4 Creating repository ${owner}/${repoName}...`;
-        const createRes = await fetch("https://api.github.com/user/repos", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            name: repoName,
-            description: "Real Posture CVA — SYS v3.0 (Apex-CNN Studio)",
-            private: false,
-            auto_init: true
-          })
-        });
-        if (!createRes.ok && createRes.status !== 422) {
-          const errJson = await createRes.json();
-          throw new Error(errJson.message || "Repo creation failed");
-        }
-
-        async function pushFile(path, content, message) {
-          let sha = undefined;
-          const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/contents/${path}`, { headers });
-          if (checkRes.ok) {
-            const existing = await checkRes.json();
-            sha = existing.sha;
+    function applyCnnRefinement(baseNodes, width, height) {
+      if (!biomechCnnModel || !window.tf || trainedSampleCount === 0) return baseNodes;
+      return window.tf.tidy(() => {
+        const { patchTensor, geomTensor } = extractCnnFeatures(baseNodes, width, height);
+        const delta = biomechCnnModel.predict([patchTensor, geomTensor]).dataSync();
+        return {
+          ...baseNodes,
+          c7: {
+            x: baseNodes.c7.x + delta[0] * 0.12 * width,
+            y: baseNodes.c7.y + delta[1] * 0.12 * height
+          },
+          tragus: {
+            x: baseNodes.tragus.x + delta[2] * 0.12 * width,
+            y: baseNodes.tragus.y + delta[3] * 0.12 * height
           }
-          const putRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/contents/${path}`, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify({
-              message,
-              content: utf8ToBase64(content),
-              ...(sha ? { sha } : {})
-            })
-          });
-          if (!putRes.ok) throw new Error(`Failed pushing ${path}`);
+        };
+      });
+    }
+
+    trainCnnBtn.addEventListener("click", async () => {
+      if (!biomechCnnModel || !lastRawLandmarks || !manualNodes.c7) return;
+      const tf = window.tf;
+      trainCnnBtn.disabled = true;
+      cnnStateText.textContent = "Training Conv2D + Osteological Layers (20 Epochs)...";
+
+      const width = canvas.width;
+      const height = canvas.height;
+      const baseNodes = computeAnatomicalNodes(lastRawLandmarks, width, height, false);
+
+      const targetDxC7 = Math.max(-0.99, Math.min(0.99, (manualNodes.c7.x - baseNodes.c7.x) / (0.12 * width)));
+      const targetDyC7 = Math.max(-0.99, Math.min(0.99, (manualNodes.c7.y - baseNodes.c7.y) / (0.12 * height)));
+      const targetDxTr = Math.max(-0.99, Math.min(0.99, (manualNodes.tragus.x - baseNodes.tragus.x) / (0.12 * width)));
+      const targetDyTr = Math.max(-0.99, Math.min(0.99, (manualNodes.tragus.y - baseNodes.tragus.y) / (0.12 * height)));
+
+      const { patchTensor, geomTensor } = extractCnnFeatures(baseNodes, width, height);
+      const targetTensor = tf.tensor2d([[targetDxC7, targetDyC7, targetDxTr, targetDyTr]], [1, 4]);
+
+      await biomechCnnModel.fit([patchTensor, geomTensor], targetTensor, {
+        epochs: 20,
+        callbacks: {
+          onEpochEnd: (epoch, logs) => {
+            cnnLossStat.textContent = `Last Loss: ${logs.loss.toFixed(5)}`;
+          }
         }
+      });
 
-        ghStatus.textContent = "3/4 Uploading index.html & apex_cva_cnn.py...";
-        const fullHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-        await pushFile("index.html", fullHtml, "feat: deploy Real Posture CVA SYS v3.0 studio");
+      patchTensor.dispose();
+      geomTensor.dispose();
+      targetTensor.dispose();
 
-        const pyCode = `import torch\nimport torch.nn as nn\nfrom torchvision import models\n\nclass ApexCVANet(nn.Module):\n    def __init__(self):\n        super().__init__()\n        b = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.DEFAULT)\n        self.features = b.features\n        self.pool = nn.AdaptiveAvgPool2d((1, 1))\n        self.head = nn.Sequential(nn.Flatten(), nn.Linear(576, 128), nn.Hardswish(), nn.Linear(128, 10), nn.Sigmoid())\n    def forward(self, x):\n        return self.head(self.pool(self.features(x)))\n`;
-        await pushFile("apex_cva_cnn.py", pyCode, "feat: add Apex-CVA PyTorch CNN model");
+      trainedSampleCount += 1;
+      cnnEpochStat.textContent = `Trained Samples: ${trainedSampleCount}`;
+      cnnStateText.textContent = "Saved Improved CNN Weights to Browser Memory ✓";
+      await biomechCnnModel.save("localstorage://apex_cva_cnn_v35");
 
-        ghStatus.textContent = "4/4 Enabling GitHub Pages...";
-        await fetch(`https://api.github.com/repos/${owner}/${repoName}/pages`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ source: { branch: "main", path: "/" } })
-        }).catch(() => {});
-
-        ghStatus.innerHTML = `✅ Deployed! Repo: <a href="https://github.com/${owner}/${repoName}" target="_blank">github.com/${owner}/${repoName}</a> · Live App: <a href="https://${owner}.github.io/${repoName}/" target="_blank">${owner}.github.io/${repoName}</a>`;
-      } catch (err) {
-        ghStatus.textContent = "❌ Error: " + err.message;
-      } finally {
-        deployNowBtn.disabled = false;
-      }
+      recomputeFromStaticPhoto();
+      statusEl.textContent = `CNN trained on Sample #${trainedSampleCount}! C7 & Tragus osteological weights updated.`;
+      trainCnnBtn.disabled = false;
     });
 
     c7UpRange.addEventListener("input", () => {
       c7UpLabel.textContent = `${c7UpRange.value}%`;
-      if (!webcamRunning && lastRawLandmarks) recomputeFromStaticPhoto(false);
+      if (!webcamRunning && lastRawLandmarks) recomputeFromStaticPhoto();
     });
     c7BackRange.addEventListener("input", () => {
       c7BackLabel.textContent = `${c7BackRange.value}%`;
-      if (!webcamRunning && lastRawLandmarks) recomputeFromStaticPhoto(false);
+      if (!webcamRunning && lastRawLandmarks) recomputeFromStaticPhoto();
     });
     smoothRange.addEventListener("input", () => {
       smoothLabel.textContent = `${smoothRange.value}%`;
     });
 
-    onnxInput.addEventListener("change", async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      try {
-        statusEl.textContent = `Loading custom ONNX CNN (${file.name})...`;
-        const buffer = await file.arrayBuffer();
-        onnxSession = await window.ort.InferenceSession.create(buffer);
-        modelSelect.value = "onnx";
-        camBtn.disabled = false;
-        sideTag.textContent = `Engine: Apex-CVA ONNX (${file.name})`;
-        statusEl.textContent = `Custom Apex-CVA CNN loaded! Snap a photo or start live camera.`;
-      } catch (err) {
-        statusEl.textContent = "ONNX load error: " + err.message;
-      }
-    });
-
     async function loadPoseModel(variant = "heavy") {
-      if (variant === "onnx") {
-        if (!onnxSession) statusEl.textContent = "Tap 'Load .ONNX' to select your trained apex_cva_cnn.onnx file.";
-        return;
-      }
       try {
         camBtn.disabled = true;
         statusEl.textContent = `Loading ${variant.toUpperCase()} biomechanical model...`;
@@ -643,7 +576,10 @@
         }
         if (poseLandmarker) poseLandmarker.close();
         poseLandmarker = await PoseLandmarker.createFromOptions(visionResolver, {
-          baseOptions: { modelAssetPath: MODEL_URLS[variant], delegate: "GPU" },
+          baseOptions: {
+            modelAssetPath: MODEL_URLS[variant],
+            delegate: "GPU"
+          },
           runningMode: runningMode,
           numPoses: 1,
           minPoseDetectionConfidence: 0.55,
@@ -652,9 +588,8 @@
         });
         smoothedLandmarks = null;
         camBtn.disabled = false;
-        flipCamBtn.disabled = false;
-        sideTag.textContent = `Engine: MediaPipe ${variant.toUpperCase()}`;
-        statusEl.textContent = `Ready (${variant.toUpperCase()} active). Upload a 90° side-profile photo or start camera.`;
+        sideTag.textContent = `Engine: ${variant.toUpperCase()} + TF.js CNN`;
+        statusEl.textContent = `Ready! Upload a 90° side-profile photo or start live camera.`;
       } catch (err) {
         statusEl.textContent = "Model load error: " + err.message;
       }
@@ -662,39 +597,6 @@
 
     modelSelect.addEventListener("change", () => loadPoseModel(modelSelect.value));
     loadPoseModel("heavy");
-
-    async function runOnnxInference(imgSource, width, height) {
-      const offCanvas = document.createElement("canvas");
-      offCanvas.width = 256;
-      offCanvas.height = 256;
-      const offCtx = offCanvas.getContext("2d");
-      offCtx.drawImage(imgSource, 0, 0, 256, 256);
-      const imgData = offCtx.getImageData(0, 0, 256, 256).data;
-
-      const mean = [0.485, 0.456, 0.406];
-      const std = [0.229, 0.224, 0.225];
-      const floatData = new Float32Array(3 * 256 * 256);
-      const planeSize = 256 * 256;
-
-      for (let i = 0; i < planeSize; i++) {
-        floatData[i] = (imgData[i * 4] / 255.0 - mean[0]) / std[0];
-        floatData[planeSize + i] = (imgData[i * 4 + 1] / 255.0 - mean[1]) / std[1];
-        floatData[2 * planeSize + i] = (imgData[i * 4 + 2] / 255.0 - mean[2]) / std[2];
-      }
-
-      const inputTensor = new window.ort.Tensor("float32", floatData, [1, 3, 256, 256]);
-      const outputs = await onnxSession.run({ input_rgb: inputTensor });
-      const kp = outputs.keypoints_xy.data;
-
-      return {
-        sideLabel: "Apex-CNN Direct",
-        c7: { x: kp[0] * width, y: kp[1] * height },
-        tragus: { x: kp[2] * width, y: kp[3] * height },
-        eye: { x: kp[4] * width, y: kp[5] * height },
-        acromion: { x: kp[6] * width, y: kp[7] * height },
-        hip: { x: kp[8] * width, y: kp[9] * height }
-      };
-    }
 
     function filterLandmarks(rawLm, isVideoFrame) {
       if (!isVideoFrame || !smoothedLandmarks) {
@@ -726,7 +628,7 @@
       return (Math.atan2(dx, dy) * 180.0) / Math.PI;
     }
 
-    function computeAnatomicalNodes(lm, width, height) {
+    function computeAnatomicalNodes(lm, width, height, useCnn = true) {
       const rightVis = (lm[8]?.visibility || 0) + (lm[12]?.visibility || 0);
       const leftVis = (lm[7]?.visibility || 0) + (lm[11]?.visibility || 0);
       const isRightProfile = rightVis >= leftVis;
@@ -755,7 +657,7 @@
       const c7X = acromionX + posteriorDirX * (neckVertDist * backFactor);
       const c7Y = acromionY - (neckVertDist * upFactor);
 
-      return {
+      const baseNodes = {
         sideLabel: isRightProfile ? "Right Lateral" : "Left Lateral",
         tragus: { x: tragusX, y: tragusY },
         c7: { x: c7X, y: c7Y },
@@ -763,9 +665,10 @@
         acromion: { x: acromionX, y: acromionY },
         hip: { x: hipX, y: hipY }
       };
+      return useCnn ? applyCnnRefinement(baseNodes, width, height) : baseNodes;
     }
 
-    function drawAndMeasure(nodes, width, height, shouldRecord = true) {
+    function drawAndMeasure(nodes, width, height) {
       const { c7, tragus, eye, acromion, hip } = nodes;
 
       const cva = calcHorizontalAngle(c7, tragus);
@@ -782,13 +685,13 @@
       updateCard("Trunk", trunk, trunkStatus, trunkStatus === "good" ? "Upright" : "Slouch");
 
       if (cvaStatus === "bad") {
-        posturePill.textContent = `⚠️ FHP (${cva.toFixed(1)}°)`;
+        posturePill.textContent = `⚠️ FHP Detected (CVA ${cva.toFixed(1)}°)`;
         posturePill.className = "posture-pill bad";
       } else if (cvaStatus === "warn") {
-        posturePill.textContent = `Borderline (${cva.toFixed(1)}°)`;
+        posturePill.textContent = `Borderline CVA (${cva.toFixed(1)}°)`;
         posturePill.className = "posture-pill warn";
       } else {
-        posturePill.textContent = `✓ Healthy (${cva.toFixed(1)}°)`;
+        posturePill.textContent = `✓ Healthy CVA (${cva.toFixed(1)}°)`;
         posturePill.className = "posture-pill";
       }
 
@@ -817,27 +720,22 @@
       drawVector(c7, tragus, getColor(cvaStatus), 5);
       drawVector(tragus, eye, "#06b6d4", 3);
 
-      drawNode(c7, "#ec4899", `C7 (${cva.toFixed(1)}°)`);
+      drawNode(c7, "#ec4899", `C7 (${cva.toFixed(1)}° CVA)`);
       drawNode(tragus, "#10b981", "Tragus");
-      drawNode(eye, "#06b6d4", `Eye (${cra.toFixed(0)}°)`);
-      drawNode(acromion, "#a855f7", `Acromion (${fsa.toFixed(0)}°)`);
+      drawNode(eye, "#06b6d4", `Eye (${cra.toFixed(0)}° CRA)`);
+      drawNode(acromion, "#a855f7", `Acromion (${fsa.toFixed(0)}° FSA)`);
       drawNode(hip, "#f59e0b", "Hip");
 
-      const now = performance.now();
-      if (shouldRecord && (!webcamRunning || now - lastLogTime > 500)) {
-        lastLogTime = now;
-        sessionLogs.push({
-          timestamp: new Date().toISOString(),
-          profile: nodes.sideLabel,
-          cva_deg: cva.toFixed(2),
-          cra_deg: cra.toFixed(2),
-          fsa_deg: fsa.toFixed(2),
-          trunk_deg: trunk.toFixed(2)
-        });
-        logCountEl.textContent = sessionLogs.length;
-        exportBtn.disabled = false;
-      }
-      labelBtn.disabled = false;
+      sessionLogs.push({
+        timestamp: new Date().toISOString(),
+        profile: nodes.sideLabel,
+        cva_deg: cva.toFixed(2),
+        cra_deg: cra.toFixed(2),
+        fsa_deg: fsa.toFixed(2),
+        trunk_deg: trunk.toFixed(2)
+      });
+      exportBtn.disabled = false;
+      trainCnnBtn.disabled = false;
     }
 
     function drawVector(p1, p2, color, width) {
@@ -855,7 +753,7 @@
     function drawNode(pt, color, label) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 7.5, 0, 2 * Math.PI);
+      ctx.arc(pt.x, pt.y, 7, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
       ctx.lineWidth = 2.5;
@@ -892,26 +790,28 @@
       document.getElementById(`badge${name}`).textContent = badgeText;
     }
 
-    function recomputeFromStaticPhoto(shouldRecord = false) {
+    function recomputeFromStaticPhoto() {
       if (!lastRawLandmarks) return;
       ctx.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
-      manualNodes = computeAnatomicalNodes(lastRawLandmarks, canvas.width, canvas.height);
-      drawAndMeasure(manualNodes, canvas.width, canvas.height, shouldRecord);
+      manualNodes = computeAnatomicalNodes(lastRawLandmarks, canvas.width, canvas.height, true);
+      drawAndMeasure(manualNodes, canvas.width, canvas.height);
     }
 
-    function redrawManualStaticPhoto(shouldRecord = false) {
+    function redrawManualStaticPhoto() {
       if (!manualNodes || !sourceImage.src) return;
       ctx.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
-      drawAndMeasure(manualNodes, canvas.width, canvas.height, shouldRecord);
+      drawAndMeasure(manualNodes, canvas.width, canvas.height);
     }
 
     function getCanvasCoords(evt) {
       const rect = canvas.getBoundingClientRect();
       const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
       const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
       return {
-        x: (clientX - rect.left) * (canvas.width / rect.width),
-        y: (clientY - rect.top) * (canvas.height / rect.height)
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
       };
     }
 
@@ -932,15 +832,15 @@
     function onPointerMove(evt) {
       if (!draggingKey || webcamRunning) return;
       evt.preventDefault();
-      manualNodes[draggingKey] = getCanvasCoords(evt);
-      redrawManualStaticPhoto(false);
-      statusEl.textContent = `Fine-tuning ${draggingKey.toUpperCase()} bony landmark...`;
+      const pt = getCanvasCoords(evt);
+      manualNodes[draggingKey] = { x: pt.x, y: pt.y };
+      redrawManualStaticPhoto();
+      statusEl.textContent = `Fine-tuning ${draggingKey.toUpperCase()}... Click 'Train CNN on This Frame' when locked!`;
     }
 
     function onPointerUp() {
       if (draggingKey) {
-        redrawManualStaticPhoto(true);
-        statusEl.textContent = `Locked ${draggingKey.toUpperCase()}! Tap 'Save CNN Label' to export training JSON.`;
+        statusEl.textContent = `Locked ${draggingKey.toUpperCase()}! Click '🧠 Train CNN on This Frame' to teach the neural network.`;
         draggingKey = null;
       }
     }
@@ -955,7 +855,6 @@
     photoInput.addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      currentPhotoName = file.name;
       if (webcamRunning) stopCamera();
 
       const url = URL.createObjectURL(file);
@@ -964,11 +863,7 @@
         canvas.height = sourceImage.naturalHeight;
         ctx.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
 
-        if (modelSelect.value === "onnx" && onnxSession) {
-          manualNodes = await runOnnxInference(sourceImage, canvas.width, canvas.height);
-          drawAndMeasure(manualNodes, canvas.width, canvas.height, true);
-          statusEl.textContent = "Predicted directly by your Custom Apex-CVA ONNX CNN!";
-        } else if (poseLandmarker) {
+        if (poseLandmarker) {
           if (runningMode !== "IMAGE") {
             runningMode = "IMAGE";
             await poseLandmarker.setOptions({ runningMode: "IMAGE" });
@@ -976,9 +871,9 @@
           const result = poseLandmarker.detect(sourceImage);
           if (result.landmarks && result.landmarks.length > 0) {
             lastRawLandmarks = result.landmarks[0];
-            manualNodes = computeAnatomicalNodes(lastRawLandmarks, canvas.width, canvas.height);
-            drawAndMeasure(manualNodes, canvas.width, canvas.height, true);
-            statusEl.textContent = "Drag C7/Tragus onto exact bony landmarks, then tap 'Save CNN Label'!";
+            manualNodes = computeAnatomicalNodes(lastRawLandmarks, canvas.width, canvas.height, true);
+            drawAndMeasure(manualNodes, canvas.width, canvas.height);
+            statusEl.textContent = "Drag C7/Tragus onto exact bone, then click '🧠 Train CNN on This Frame'!";
           } else {
             statusEl.textContent = "No pose detected in photo.";
           }
@@ -988,33 +883,8 @@
       sourceImage.src = url;
     });
 
-    labelBtn.addEventListener("click", () => {
-      if (!manualNodes.c7 || !canvas.width) return;
-      const w = canvas.width, h = canvas.height;
-      const annotation = {
-        image_path: currentPhotoName,
-        image_width: w,
-        image_height: h,
-        cva_deg: calcHorizontalAngle(manualNodes.c7, manualNodes.tragus).toFixed(2),
-        cra_deg: calcHorizontalAngle(manualNodes.tragus, manualNodes.eye).toFixed(2),
-        fsa_deg: calcVerticalAngle(manualNodes.acromion, manualNodes.c7).toFixed(2),
-        keypoints: {
-          c7_spinous: { x: +(manualNodes.c7.x / w).toFixed(6), y: +(manualNodes.c7.y / h).toFixed(6) },
-          tragus: { x: +(manualNodes.tragus.x / w).toFixed(6), y: +(manualNodes.tragus.y / h).toFixed(6) },
-          eye_canthus: { x: +(manualNodes.eye.x / w).toFixed(6), y: +(manualNodes.eye.y / h).toFixed(6) },
-          acromion: { x: +(manualNodes.acromion.x / w).toFixed(6), y: +(manualNodes.acromion.y / h).toFixed(6) },
-          hip_trochanter: { x: +(manualNodes.hip.x / w).toFixed(6), y: +(manualNodes.hip.y / h).toFixed(6) }
-        }
-      };
-      const blob = new Blob([JSON.stringify(annotation, null, 2)], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `label_${currentPhotoName.replace(/\.[^/.]+$/, "")}.json`;
-      a.click();
-    });
-
     async function startCamera() {
-      if (!poseLandmarker && !onnxSession) return;
+      if (!poseLandmarker) return;
       try {
         if (currentStream) currentStream.getTracks().forEach((t) => t.stop());
         currentStream = await navigator.mediaDevices.getUserMedia({
@@ -1023,16 +893,18 @@
         });
         video.srcObject = currentStream;
         await video.play();
-        if (poseLandmarker && runningMode !== "VIDEO") {
+
+        if (runningMode !== "VIDEO") {
           runningMode = "VIDEO";
           await poseLandmarker.setOptions({ runningMode: "VIDEO" });
         }
         smoothedLandmarks = null;
         webcamRunning = true;
         camBtn.textContent = "⏹ Stop Cam";
+        statusEl.textContent = "Live lateral tracking active (with In-Browser CNN refinement).";
         requestAnimationFrame(predictWebcam);
       } catch (err) {
-        statusEl.textContent = "Live camera requires HTTPS/localhost. Use 'Snap / Photo'.";
+        statusEl.textContent = "Live camera requires HTTPS/localhost. Enable GitHub Pages to use live camera!";
       }
     }
 
@@ -1042,13 +914,12 @@
         currentStream.getTracks().forEach((t) => t.stop());
         currentStream = null;
       }
-      camBtn.textContent = "🎥 Live Cam";
+      camBtn.textContent = "🎥 Live Camera";
     }
 
-    camBtn.addEventListener("click", () => webcamRunning ? stopCamera() : startCamera());
-    flipCamBtn.addEventListener("click", () => {
-      facingMode = facingMode === "environment" ? "user" : "environment";
-      if (webcamRunning) startCamera();
+    camBtn.addEventListener("click", () => {
+      if (webcamRunning) stopCamera();
+      else startCamera();
     });
 
     let lastVideoTime = -1;
@@ -1060,16 +931,11 @@
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        if (modelSelect.value === "onnx" && onnxSession) {
-          manualNodes = await runOnnxInference(video, canvas.width, canvas.height);
-          drawAndMeasure(manualNodes, canvas.width, canvas.height, true);
-        } else if (poseLandmarker) {
-          const result = poseLandmarker.detectForVideo(video, performance.now());
-          if (result.landmarks && result.landmarks.length > 0) {
-            const filtered = filterLandmarks(result.landmarks[0], true);
-            manualNodes = computeAnatomicalNodes(filtered, canvas.width, canvas.height);
-            drawAndMeasure(manualNodes, canvas.width, canvas.height, true);
-          }
+        const result = poseLandmarker.detectForVideo(video, performance.now());
+        if (result.landmarks && result.landmarks.length > 0) {
+          lastRawLandmarks = filterLandmarks(result.landmarks[0], true);
+          manualNodes = computeAnatomicalNodes(lastRawLandmarks, canvas.width, canvas.height, true);
+          drawAndMeasure(manualNodes, canvas.width, canvas.height);
         }
       }
       if (webcamRunning) requestAnimationFrame(predictWebcam);
@@ -1079,14 +945,13 @@
       if (sessionLogs.length === 0) return;
       const headers = ["timestamp", "profile", "cva_deg", "cra_deg", "fsa_deg", "trunk_deg"];
       const rows = sessionLogs.map((r) => headers.map((h) => r[h]).join(","));
-      const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv" });
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `real_posture_cva_${Date.now()}.csv`;
       a.click();
     });
   </script>
-
-
-
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm/vision_wasm_internal.js" crossorigin="anonymous"></script></body></html>
+</body>
+</html>
